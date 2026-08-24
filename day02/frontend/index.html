@@ -5,7 +5,7 @@
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        <title>AI Chat - 持续优化</title>
+        <title>AI Chat</title>
 
         <style>
             * {
@@ -14,6 +14,7 @@
 
             body {
                 margin: 0;
+
                 padding: 40px;
 
                 font-family: Arial, 'Microsoft YaHei', sans-serif;
@@ -23,11 +24,14 @@
 
             .container {
                 width: 800px;
+
                 max-width: 100%;
+
                 margin: 0 auto;
 
-                background: #fff;
                 padding: 30px;
+
+                background: #ffffff;
 
                 border-radius: 12px;
 
@@ -36,20 +40,38 @@
 
             h1 {
                 margin-top: 0;
+
                 margin-bottom: 10px;
             }
 
             .desc {
+                margin-bottom: 20px;
+
                 color: #666;
-                margin-bottom: 25px;
+            }
+
+            .conversation {
+                margin-bottom: 15px;
+
+                padding: 10px 12px;
+
+                background: #f5f5f5;
+
+                border-radius: 6px;
+
+                font-size: 12px;
+
+                color: #888;
+
+                word-break: break-all;
             }
 
             .chat-box {
                 min-height: 300px;
 
-                padding: 20px;
-
                 margin-bottom: 20px;
+
+                padding: 20px;
 
                 background: #f8f8f8;
 
@@ -58,10 +80,13 @@
                 white-space: pre-wrap;
 
                 line-height: 1.8;
+
+                word-break: break-word;
             }
 
             .input-box {
                 display: flex;
+
                 gap: 10px;
             }
 
@@ -96,7 +121,7 @@
 
                 background: #409eff;
 
-                color: white;
+                color: #fff;
 
                 cursor: pointer;
 
@@ -118,6 +143,8 @@
 
                 justify-content: space-between;
 
+                align-items: center;
+
                 margin-top: 15px;
             }
 
@@ -129,9 +156,7 @@
                 background: #555;
             }
 
-            .status {
-                margin-top: 15px;
-
+            #status {
                 color: #999;
 
                 font-size: 13px;
@@ -143,12 +168,18 @@
         <div class="container">
             <h1>🤖 AI Chat</h1>
 
-            <div class="desc">Gucy：Streaming + SSE + 多轮对话</div>
+            <div class="desc">Streaming + SSE + Conversation Memory</div>
 
-            <!-- AI 回答区域 -->
+            <!-- Conversation ID -->
+
+            <div id="conversation" class="conversation">正在创建会话...</div>
+
+            <!-- AI 回答 -->
+
             <div id="answer" class="chat-box">AI 回复会显示在这里...</div>
 
-            <!-- 输入区域 -->
+            <!-- 输入 -->
+
             <div class="input-box">
                 <input
                     id="message"
@@ -159,20 +190,19 @@
                 <button id="send">发送</button>
             </div>
 
-            <!-- 操作区域 -->
-            <div class="actions">
-                <button id="clear">清空对话</button>
+            <!-- 操作 -->
 
-                <div id="status" class="status">就绪</div>
+            <div class="actions">
+                <button id="clear">新建对话</button>
+
+                <div id="status">初始化中...</div>
             </div>
         </div>
 
         <script>
-            /*
-             * ========================================
-             * 1. 获取 DOM
-             * ========================================
-             */
+            // ========================================
+            // 1. DOM
+            // ========================================
 
             const messageInput = document.querySelector('#message')
 
@@ -184,50 +214,76 @@
 
             const statusElement = document.querySelector('#status')
 
-            /*
-             * ========================================
-             * 2. 对话历史
-             * ========================================
-             *
-             * 这里就是我们的 Memory
-             *
-             * system
-             * user
-             * assistant
-             * user
-             * assistant
-             *
-             */
+            const conversationElement = document.querySelector('#conversation')
 
-            const messages = [
-                {
-                    role: 'system',
+            // ========================================
+            // 2. Conversation ID
+            // ========================================
 
-                    content:
-                        '你是一名前端架构师，请用前端工程师能理解的方式回答。'
+            let conversationId = null
+
+            // ========================================
+            // 3. 创建 Conversation
+            // ========================================
+
+            async function createConversation() {
+                try {
+                    statusElement.textContent = '正在创建会话...'
+
+                    const response = await fetch(
+                        'http://127.0.0.1:8000/conversation',
+                        {
+                            method: 'POST'
+                        }
+                    )
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`)
+                    }
+
+                    const data = await response.json()
+
+                    conversationId = data.conversation_id
+
+                    conversationElement.textContent =
+                        'Conversation ID：' + conversationId
+
+                    statusElement.textContent = '就绪'
+
+                    answerElement.textContent = 'AI 回复会显示在这里...'
+
+                    messageInput.focus()
+                } catch (error) {
+                    console.error('创建会话失败：', error)
+
+                    statusElement.textContent = '创建会话失败'
+
+                    conversationElement.textContent = '无法连接后端'
                 }
-            ]
+            }
 
-            /*
-             * ========================================
-             * 3. 发送消息
-             * ========================================
-             */
+            // ========================================
+            // 4. 发送消息
+            // ========================================
 
             async function sendMessage() {
                 const message = messageInput.value.trim()
 
-                /*
-                 * 如果没有输入
-                 */
-
+                // 没有输入
                 if (!message) {
                     return
                 }
 
-                /*
-                 * 防止重复点击
-                 */
+                // 没有 Conversation
+                if (!conversationId) {
+                    alert('Conversation 尚未创建完成')
+
+                    return
+                }
+
+                // ====================================
+                // 禁用按钮
+                // ====================================
 
                 sendButton.disabled = true
 
@@ -235,36 +291,18 @@
 
                 statusElement.textContent = 'AI 正在思考...'
 
-                /*
-                 * 清空当前回答区域
-                 */
-
                 answerElement.textContent = ''
 
-                /*
-                 * ====================================
-                 * 4. 保存用户消息
-                 * ====================================
-                 */
-
-                messages.push({
-                    role: 'user',
-
-                    content: message
-                })
-
-                /*
-                 * 保存 AI 完整回答
-                 */
+                // ====================================
+                // 保存 AI 完整回答
+                // ====================================
 
                 let assistantMessage = ''
 
                 try {
-                    /*
-                     * ====================================
-                     * 5. 请求 FastAPI
-                     * ====================================
-                     */
+                    // ==================================
+                    // 请求后端
+                    // ==================================
 
                     const response = await fetch(
                         'http://127.0.0.1:8000/chat/stream',
@@ -276,137 +314,100 @@
                             },
 
                             body: JSON.stringify({
-                                messages: messages
+                                conversation_id: conversationId,
+
+                                message: message
                             })
                         }
                     )
 
-                    /*
-                     * HTTP 请求失败
-                     */
+                    // ==================================
+                    // HTTP 错误
+                    // ==================================
 
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`)
                     }
 
-                    /*
-                     * ====================================
-                     * 6. 获取 ReadableStream
-                     * ====================================
-                     */
+                    // ==================================
+                    // ReadableStream
+                    // ==================================
 
                     const reader = response.body.getReader()
 
-                    /*
-                     * ====================================
-                     * 7. TextDecoder
-                     * ====================================
-                     */
+                    // ==================================
+                    // TextDecoder
+                    // ==================================
 
                     const decoder = new TextDecoder('utf-8')
 
-                    /*
-                     * ====================================
-                     * 8. SSE Buffer
-                     * ====================================
-                     *
-                     * 解决：
-                     *
-                     * 一个 SSE 消息
-                     * 可能被拆成多个 chunk
-                     *
-                     */
+                    // ==================================
+                    // SSE Buffer
+                    // ==================================
 
                     let buffer = ''
 
-                    /*
-                     * ====================================
-                     * 9. 不断读取 Stream
-                     * ====================================
-                     */
+                    // ==================================
+                    // 不断读取
+                    // ==================================
 
                     while (true) {
                         const { done, value } = await reader.read()
 
-                        /*
-                         * Stream 结束
-                         */
+                        // Stream 结束
 
                         if (done) {
                             break
                         }
 
-                        /*
-                         * Uint8Array
-                         * ↓
-                         * String
-                         */
+                        // =================================
+                        // Uint8Array → String
+                        // =================================
 
                         buffer += decoder.decode(value, {
                             stream: true
                         })
 
-                        /*
-                         * =================================
-                         * 10. 按 SSE 的 \n\n 分割事件
-                         * =================================
-                         */
+                        // =================================
+                        // SSE Event
+                        // =================================
 
                         const events = buffer.split('\n\n')
 
-                        /*
-                         * 最后一个可能是不完整的数据
-                         *
-                         * 所以留下它
-                         */
+                        // =================================
+                        // 最后一个可能不完整
+                        // =================================
 
                         buffer = events.pop()
 
-                        /*
-                         * =================================
-                         * 11. 处理完整 SSE Event
-                         * =================================
-                         */
+                        // =================================
+                        // 处理完整事件
+                        // =================================
 
                         for (const event of events) {
-                            /*
-                             * 找到 data:
-                             */
+                            // 找 data:
 
                             const line = event
                                 .split('\n')
                                 .find((line) => line.startsWith('data:'))
 
-                            /*
-                             * 没有 data
-                             */
-
                             if (!line) {
                                 continue
                             }
 
-                            /*
-                             * 去掉：
-                             *
-                             * data:
-                             *
-                             */
+                            // =================================
+                            // 去掉 data:
+                            // =================================
 
                             const jsonText = line.slice(5).trim()
-
-                            /*
-                             * 空数据
-                             */
 
                             if (!jsonText) {
                                 continue
                             }
 
-                            /*
-                             * =================================
-                             * 12. JSON.parse
-                             * =================================
-                             */
+                            // =================================
+                            // JSON
+                            // =================================
 
                             let data
 
@@ -418,11 +419,17 @@
                                 continue
                             }
 
-                            /*
-                             * =================================
-                             * 13. AI 完成
-                             * =================================
-                             */
+                            // =================================
+                            // 后端错误
+                            // =================================
+
+                            if (data.error) {
+                                throw new Error(data.error)
+                            }
+
+                            // =================================
+                            // 完成
+                            // =================================
 
                             if (data.done) {
                                 statusElement.textContent = '完成'
@@ -430,92 +437,61 @@
                                 continue
                             }
 
-                            /*
-                             * =================================
-                             * 14. AI 内容
-                             * =================================
-                             */
+                            // =================================
+                            // AI 内容
+                            // =================================
 
                             if (data.content) {
-                                /*
-                                 * 保存完整 AI 回复
-                                 */
+                                // 保存完整回答
 
                                 assistantMessage += data.content
 
-                                /*
-                                 * 实时显示
-                                 */
+                                // 实时显示
 
                                 answerElement.textContent += data.content
                             }
                         }
                     }
 
-                    /*
-                     * ====================================
-                     * 15. 保存 AI 消息
-                     * ====================================
-                     *
-                     * 非常重要
-                     *
-                     * 下一轮聊天需要使用
-                     *
-                     */
+                    // ====================================
+                    // Stream 完成
+                    // ====================================
 
                     if (assistantMessage) {
-                        messages.push({
-                            role: 'assistant',
-
-                            content: assistantMessage
-                        })
+                        statusElement.textContent = '完成'
                     }
 
-                    /*
-                     * ====================================
-                     * 16. 清空输入框
-                     * ====================================
-                     */
+                    // 清空输入
 
                     messageInput.value = ''
                 } catch (error) {
                     console.error('请求失败：', error)
 
-                    answerElement.textContent = '请求失败：' + error.message
+                    answerElement.textContent = '请求失败：\n' + error.message
 
                     statusElement.textContent = '请求失败'
                 } finally {
-                    /*
-                     * ====================================
-                     * 17. 恢复按钮
-                     * ====================================
-                     */
+                    // =================================
+                    // 恢复按钮
+                    // =================================
 
                     sendButton.disabled = false
 
                     messageInput.disabled = false
 
-                    /*
-                     * 输入框重新获得焦点
-                     */
-
                     messageInput.focus()
                 }
             }
 
-            /*
-             * ========================================
-             * 18. 点击发送
-             * ========================================
-             */
+            // ========================================
+            // 5. 点击发送
+            // ========================================
 
             sendButton.addEventListener('click', sendMessage)
 
-            /*
-             * ========================================
-             * 19. Enter 发送
-             * ========================================
-             */
+            // ========================================
+            // 6. Enter 发送
+            // ========================================
 
             messageInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -525,40 +501,19 @@
                 }
             })
 
-            /*
-             * ========================================
-             * 20. 清空对话
-             * ========================================
-             */
+            // ========================================
+            // 7. 新建对话
+            // ========================================
 
-            clearButton.addEventListener('click', () => {
-                /*
-                 * 删除 messages 中
-                 * system 之后的所有消息
-                 */
-
-                messages.splice(1)
-
-                /*
-                 * 清空页面
-                 */
-
-                answerElement.textContent = 'AI 回复会显示在这里...'
-
-                /*
-                 * 状态
-                 */
-
-                statusElement.textContent = '对话已清空'
-
-                /*
-                 * 输入框
-                 */
-
-                messageInput.value = ''
-
-                messageInput.focus()
+            clearButton.addEventListener('click', async () => {
+                await createConversation()
             })
+
+            // ========================================
+            // 8. 页面加载
+            // ========================================
+
+            createConversation()
         </script>
     </body>
 </html>

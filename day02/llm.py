@@ -66,6 +66,8 @@ def chat_stream(messages):
         ↓
     FastAPI
         ↓
+    SSE
+        ↓
     浏览器
     """
 
@@ -83,18 +85,15 @@ def chat_stream(messages):
 
         for chunk in response:
 
-            # 有些 chunk 没有 content
+            # 有些 chunk 没有 choices
             if not chunk.choices:
                 continue
 
+            # 获取本次生成的内容
             content = chunk.choices[0].delta.content
 
-            # ==================================
-            # 有内容才 yield
-            # ==================================
-
+            # 有内容才返回
             if content:
-
                 yield content
 
     except Exception as error:
