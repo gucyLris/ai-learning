@@ -14,5 +14,12 @@
         "truststore",
         "urllib",
         "venv"
+    ],
+    "python-envs.pythonProjects": [
+        {
+            "path": "day03",
+            "envManager": "ms-python.python:venv",
+            "packageManager": "ms-python.python:pip"
+        }
     ]
 }
