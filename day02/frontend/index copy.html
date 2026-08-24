@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <title>AI Chat</title>
+    </head>
+
+    <body>
+        <h1>AI Chat</h1>
+
+        <input id="message" type="text" placeholder="请输入问题" />
+
+        <button id="send">发送</button>
+
+        <div id="answer"></div>
+
+        <script>
+            const messageInput = document.querySelector('#message')
+            const sendButton = document.querySelector('#send')
+            const answerElement = document.querySelector('#answer')
+
+            sendButton.addEventListener('click', async () => {
+                const message = messageInput.value
+
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+
+                    body: JSON.stringify({
+                        message
+                    })
+                })
+
+                const data = await response.json()
+
+                answerElement.textContent = data.answer
+            })
+        </script>
+    </body>
+</html>
