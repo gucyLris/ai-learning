@@ -1,9 +1,6 @@
 import json
-
 from uuid import uuid4
-
 from fastapi import APIRouter
-
 from fastapi.responses import StreamingResponse
 
 from app.schemas.chat import (

@@ -26,6 +26,8 @@ pip install fastapi uvicorn openai python-dotenv
 
 ```python
 pip freeze > requirements.txt requirements.txt
+
+pip install -r requirements.txt
 ```
 
 ↓
