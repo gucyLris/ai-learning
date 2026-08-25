@@ -1,32 +1,33 @@
-from typing import List, Dict
+from app.services.token_service import count_message_tokens
 
-# 最大保留消息数量
-MAX_RECENT_MESSAGES = 4
+MAX_CONTEXT_TOKENS = 2000
 
 
-# 构建 Context
-def build_context(messages: List[Dict[str, str]]):
-    """
-    从完整历史中构建发送给 LLM 的 Context。
-
-    保留：
-    1. system message
-    2. 最近 N 条消息
-    """
+def build_context(messages):
 
     if not messages:
         return []
 
-    # 找 System Prompt
-    system_messages = [message for message in messages if message["role"] == "system"]
+    # System
+    system_messages = [m for m in messages if m["role"] == "system"]
 
-    # 非 System 消息
-    normal_messages = [message for message in messages if message["role"] != "system"]
+    normal_messages = [m for m in messages if m["role"] != "system"]
 
-    # 最近 N 条
-    recent_messages = normal_messages[-MAX_RECENT_MESSAGES:]
+    context = []
 
-    # 最终 Context
-    context = system_messages + recent_messages
+    current_tokens = 0
 
-    return context
+    # 倒序
+    for message in reversed(normal_messages):
+
+        message_tokens = count_message_tokens(message)
+
+        if current_tokens + message_tokens > MAX_CONTEXT_TOKENS:
+
+            break
+
+        context.insert(0, message)
+
+        current_tokens += message_tokens
+
+    return system_messages + context
