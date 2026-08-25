@@ -21,6 +21,8 @@ from app.services.context_service import (
     build_context,
 )
 
+from app.services.token_service import count_messages_tokens
+
 # Router
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -62,13 +64,12 @@ def chat_stream_api(request: ChatRequest):
     # 4. 构建 Context
     context = build_context(messages)
 
-    print("\n========== Context ==========")
-
-    for message in context:
-
-        print(message["role"], ":", message["content"])
-
-    print("=============================\n")
+    context_tokens = count_messages_tokens(context)
+    print("\n========== Token Budget ==========")
+    print(f"Memory Messages: " f"{len(messages)}")
+    print(f"Context Messages: " f"{len(context)}")
+    print(f"Context Tokens: " f"{context_tokens}")
+    print("==================================\n")
 
     # 5. Streaming
     def generate():
